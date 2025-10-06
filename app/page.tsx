@@ -1,5 +1,7 @@
+import Link from "next/link"
 import { PixelBackground } from "@/components/pixel-background"
 import { EnumerationGenerator } from "@/components/enumeration-generator"
+import { Button } from "@/components/ui/button"
 
 export default function Home() {
   return (
@@ -26,6 +28,12 @@ export default function Home() {
               Generate extensive username and password enumerations from your input terms. Supports multiple separators,
               capitalizations, and pattern variations.
             </p>
+
+            <div className="flex justify-center">
+              <Button asChild className="font-mono uppercase text-xs tracking-wider">
+                <Link href="#generator">Accéder au générateur</Link>
+              </Button>
+            </div>
           </header>
 
           <EnumerationGenerator />
