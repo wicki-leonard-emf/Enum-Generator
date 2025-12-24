@@ -15,51 +15,88 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { X, Download, Plus, ChevronDown } from "lucide-react"
 
+/**
+ * Generation mode types:
+ * - simple: Essential variations with basic combinations
+ * - medium: Balanced combinations with common additions
+ * - hard: Exhaustive exploration with all possible variations
+ */
 type GenerationMode = "simple" | "medium" | "hard"
 
+/**
+ * Capitalization transformation functions
+ */
 const toLower = (value: string) => value.toLowerCase()
 const toUpper = (value: string) => value.toUpperCase()
 const toTitleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
 const identity = (value: string) => value
 
+/**
+ * Capitalization strategies for each generation mode
+ */
 const capitalizationsByMode: Record<GenerationMode, Array<(value: string) => string>> = {
   simple: [toLower, toTitleCase, toUpper, identity],
   medium: [toLower, toUpper, toTitleCase, identity],
   hard: [toLower, toUpper, toTitleCase, identity],
 }
 
+/**
+ * Separators used between terms
+ */
 const separators = ["", "_", "-", "."]
 
+/**
+ * Numbers to append/prepend by mode
+ */
 const numbersByMode: Record<GenerationMode, string[]> = {
   simple: ["1", "123"],
   medium: ["1", "2", "3", "12", "123", "2024", "2025"],
   hard: ["1", "2", "3", "123", "2023", "2024", "2025", "01", "00", "99"],
 }
 
+/**
+ * Special characters to append/prepend by mode
+ */
 const specialCharsByMode: Record<GenerationMode, string[]> = {
   simple: ["!"],
   medium: ["!", "@", "#"],
   hard: ["!", "@", "#", "$", "*"],
 }
 
+/**
+ * Separators used between terms and numbers
+ */
 const numberSeparatorsByMode: Record<GenerationMode, string[]> = {
   simple: ["", "-"],
   medium: separators,
   hard: separators,
 }
 
+/**
+ * Mode labels for UI display
+ */
 const modeLabels: Record<GenerationMode, string> = {
   simple: "Simple",
   medium: "Medium",
   hard: "Hard",
 }
 
+/**
+ * Mode descriptions for UI display
+ */
 const modeDescriptions: Record<GenerationMode, string> = {
-  simple: "Variations essentielles et légères.",
-  medium: "Combinaisons équilibrées avec ajouts courants.",
-  hard: "Exploration exhaustive avec toutes les variations possibles.",
+  simple: "Essential variations with light combinations.",
+  medium: "Balanced combinations with common additions.",
+  hard: "Exhaustive exploration with all possible variations.",
 }
 
+/**
+ * Generates all possible enumerations from input terms based on the selected mode
+ * 
+ * @param terms - Array of input terms to generate variations from
+ * @param mode - Generation mode (simple, medium, hard)
+ * @returns Array of unique enumeration strings
+ */
 function buildEnumerations(terms: string[], mode: GenerationMode) {
   const results = new Set<string>()
   if (terms.length === 0) {
@@ -69,12 +106,14 @@ function buildEnumerations(terms: string[], mode: GenerationMode) {
   const capitalizationTransforms = capitalizationsByMode[mode]
   const variantMap = new Map<string, string[]>()
 
+  // Generate capitalization variants for each term
   terms.forEach((term) => {
     const variants = Array.from(new Set(capitalizationTransforms.map((transform) => transform(term))))
     variantMap.set(term, variants)
     variants.forEach((variant) => results.add(variant))
   })
 
+  // Generate two-term combinations (medium and hard modes)
   if (mode !== "simple" && terms.length >= 2) {
     for (let i = 0; i < terms.length; i++) {
       for (let j = 0; j < terms.length; j++) {
@@ -92,6 +131,7 @@ function buildEnumerations(terms: string[], mode: GenerationMode) {
     }
   }
 
+  // Generate three-term combinations (hard mode only)
   if (mode === "hard" && terms.length >= 3) {
     for (let i = 0; i < terms.length; i++) {
       for (let j = 0; j < terms.length; j++) {
@@ -116,6 +156,7 @@ function buildEnumerations(terms: string[], mode: GenerationMode) {
     }
   }
 
+  // Add number variations
   const numbers = numbersByMode[mode]
   const numberSeparators = numberSeparatorsByMode[mode]
 
@@ -131,6 +172,7 @@ function buildEnumerations(terms: string[], mode: GenerationMode) {
     })
   })
 
+  // Add special character variations
   const specialChars = specialCharsByMode[mode]
   terms.forEach((term) => {
     const variants = variantMap.get(term) ?? []
@@ -142,6 +184,7 @@ function buildEnumerations(terms: string[], mode: GenerationMode) {
     })
   })
 
+  // Add common patterns (medium and hard modes)
   if (mode !== "simple") {
     terms.forEach((term) => {
       results.add(`${term}123`)
@@ -154,6 +197,7 @@ function buildEnumerations(terms: string[], mode: GenerationMode) {
     })
   }
 
+  // Add leet speak variations (hard mode only)
   if (mode === "hard") {
     const leetMap: Record<string, string> = {
       a: "4",
@@ -178,6 +222,13 @@ function buildEnumerations(terms: string[], mode: GenerationMode) {
   return Array.from(results)
 }
 
+/**
+ * EnumerationGenerator Component
+ * 
+ * Main component for generating username/password enumerations.
+ * Allows users to input terms, select a generation mode, and generate
+ * variations with different capitalizations, separators, and patterns.
+ */
 export function EnumerationGenerator() {
   const [terms, setTerms] = useState<string[]>([])
   const [currentInput, setCurrentInput] = useState("")
@@ -185,6 +236,9 @@ export function EnumerationGenerator() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [mode, setMode] = useState<GenerationMode>("hard")
 
+  /**
+   * Adds a new term to the list if it's not empty and not already present
+   */
   const addTerm = () => {
     if (currentInput.trim() && !terms.includes(currentInput.trim())) {
       setTerms([...terms, currentInput.trim()])
@@ -192,16 +246,23 @@ export function EnumerationGenerator() {
     }
   }
 
+  /**
+   * Removes a term from the list
+   * @param term - The term to remove
+   */
   const removeTerm = (term: string) => {
     setTerms(terms.filter((t) => t !== term))
   }
 
+  /**
+   * Generates enumerations based on current terms and mode
+   */
   const generateEnumerations = () => {
     if (terms.length === 0) return
 
     setIsGenerating(true)
 
-    // Simulate generation delay for UX
+    // Simulate generation delay for better UX
     setTimeout(() => {
       const results = buildEnumerations(terms, mode).sort((a, b) => a.localeCompare(b))
       setGenerated(results)
@@ -209,6 +270,9 @@ export function EnumerationGenerator() {
     }, 500)
   }
 
+  /**
+   * Downloads the generated enumerations as a text file
+   */
   const downloadList = () => {
     const blob = new Blob([generated.join("\n")], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
@@ -278,7 +342,7 @@ export function EnumerationGenerator() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-72">
-              <DropdownMenuLabel>Mode de génération</DropdownMenuLabel>
+              <DropdownMenuLabel>Generation Mode</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuRadioGroup value={mode} onValueChange={(value) => setMode(value as GenerationMode)}>
                 {(Object.keys(modeLabels) as GenerationMode[]).map((value) => (

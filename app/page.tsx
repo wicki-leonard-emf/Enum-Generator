@@ -31,7 +31,7 @@ export default function Home() {
 
             <div className="flex justify-center">
               <Button asChild className="font-mono uppercase text-xs tracking-wider">
-                <Link href="#generator">Accéder au générateur</Link>
+                <Link href="#generator">Access Generator</Link>
               </Button>
             </div>
           </header>

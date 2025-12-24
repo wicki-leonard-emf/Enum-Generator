@@ -2,6 +2,15 @@
 
 import { useEffect, useRef } from "react"
 
+/**
+ * PixelBackground Component
+ * 
+ * Creates an animated pixel background with floating particles.
+ * The pixels float upward with random positions, durations, and delays
+ * to create a dynamic visual effect.
+ * 
+ * @returns A div container with dynamically generated animated pixels
+ */
 export function PixelBackground() {
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -11,6 +20,7 @@ export function PixelBackground() {
     const container = containerRef.current
     const pixelCount = 80
 
+    // Generate random pixels with varying animation properties
     for (let i = 0; i < pixelCount; i++) {
       const pixel = document.createElement("div")
       pixel.className = "pixel"
@@ -21,6 +31,7 @@ export function PixelBackground() {
       container.appendChild(pixel)
     }
 
+    // Cleanup: remove all pixels when component unmounts
     return () => {
       container.innerHTML = ""
     }
