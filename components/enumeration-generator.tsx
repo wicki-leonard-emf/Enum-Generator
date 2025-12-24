@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { X, Download, Plus, ChevronDown } from "lucide-react"
+import { X, Download, Plus, ChevronDown, Copy } from "lucide-react"
 
 /**
  * Generation mode types:
@@ -235,15 +235,29 @@ export function EnumerationGenerator() {
   const [generated, setGenerated] = useState<string[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [mode, setMode] = useState<GenerationMode>("hard")
+  const [copySuccess, setCopySuccess] = useState(false)
 
   /**
    * Adds a new term to the list if it's not empty and not already present
    */
   const addTerm = () => {
-    if (currentInput.trim() && !terms.includes(currentInput.trim())) {
-      setTerms([...terms, currentInput.trim()])
-      setCurrentInput("")
+    const trimmedInput = currentInput.trim()
+    
+    // Validate input
+    if (!trimmedInput) return
+    
+    // Check for duplicates (case-insensitive)
+    if (terms.some(term => term.toLowerCase() === trimmedInput.toLowerCase())) {
+      return
     }
+    
+    // Limit number of terms to prevent performance issues
+    if (terms.length >= 10) {
+      return
+    }
+    
+    setTerms([...terms, trimmedInput])
+    setCurrentInput("")
   }
 
   /**
@@ -262,27 +276,63 @@ export function EnumerationGenerator() {
 
     setIsGenerating(true)
 
-    // Simulate generation delay for better UX
-    setTimeout(() => {
-      const results = buildEnumerations(terms, mode).sort((a, b) => a.localeCompare(b))
-      setGenerated(results)
-      setIsGenerating(false)
-    }, 500)
+    // Use requestAnimationFrame to avoid blocking UI
+    requestAnimationFrame(() => {
+      try {
+        const results = buildEnumerations(terms, mode).sort((a, b) => a.localeCompare(b))
+        setGenerated(results)
+      } catch (error) {
+        console.error("Error generating enumerations:", error)
+        setGenerated([])
+      } finally {
+        setIsGenerating(false)
+      }
+    })
   }
 
   /**
    * Downloads the generated enumerations as a text file
    */
   const downloadList = () => {
-    const blob = new Blob([generated.join("\n")], { type: "text/plain" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "enumerations.txt"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    try {
+      if (generated.length === 0) return
+      
+      const blob = new Blob([generated.join("\n")], { type: "text/plain" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `enumerations_${new Date().toISOString().split('T')[0]}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Error downloading file:", error)
+    }
+  }
+
+  /**
+   * Clears all input terms and generated results
+   */
+  const clearAll = () => {
+    setTerms([])
+    setGenerated([])
+    setCurrentInput("")
+  }
+
+  /**
+   * Copies generated enumerations to clipboard
+   */
+  const copyToClipboard = async () => {
+    try {
+      if (generated.length === 0) return
+      
+      await navigator.clipboard.writeText(generated.join("\n"))
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2000)
+    } catch (error) {
+      console.error("Error copying to clipboard:", error)
+    }
   }
 
   return (
@@ -296,30 +346,53 @@ export function EnumerationGenerator() {
               onKeyDown={(e) => e.key === "Enter" && addTerm()}
               placeholder="Enter term (e.g., john, admin, 2023)"
               className="flex-1 bg-input border-border/50 text-foreground placeholder:text-muted-foreground"
+              disabled={terms.length >= 10}
+              maxLength={50}
             />
             <Button
               onClick={addTerm}
               variant="secondary"
               size="icon"
               className="bg-secondary hover:bg-accent text-secondary-foreground"
+              disabled={!currentInput.trim() || terms.length >= 10}
+              title={terms.length >= 10 ? "Maximum terms reached" : "Add term"}
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
 
           {terms.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {terms.map((term) => (
-                <div
-                  key={term}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-accent/50 rounded-md text-sm font-mono text-accent-foreground"
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground font-mono">
+                  {terms.length} term{terms.length > 1 ? 's' : ''} added {terms.length >= 10 ? '(max reached)' : ''}
+                </p>
+                <Button
+                  onClick={clearAll}
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs text-muted-foreground hover:text-foreground"
                 >
-                  {term}
-                  <button onClick={() => removeTerm(term)} className="hover:text-foreground transition-colors">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
+                  Clear all
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {terms.map((term) => (
+                  <div
+                    key={term}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-accent/50 rounded-md text-sm font-mono text-accent-foreground"
+                  >
+                    {term}
+                    <button 
+                      onClick={() => removeTerm(term)} 
+                      className="hover:text-foreground transition-colors"
+                      aria-label={`Remove ${term}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -373,15 +446,26 @@ export function EnumerationGenerator() {
                   {generated.length.toLocaleString()} combinations
                 </p>
               </div>
-              <Button
-                onClick={downloadList}
-                variant="secondary"
-                size="sm"
-                className="bg-secondary hover:bg-accent text-secondary-foreground font-mono gap-2"
-              >
-                <Download className="h-4 w-4" />
-                DOWNLOAD
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={copyToClipboard}
+                  variant="secondary"
+                  size="sm"
+                  className="bg-secondary hover:bg-accent text-secondary-foreground font-mono gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  {copySuccess ? "COPIED!" : "COPY"}
+                </Button>
+                <Button
+                  onClick={downloadList}
+                  variant="secondary"
+                  size="sm"
+                  className="bg-secondary hover:bg-accent text-secondary-foreground font-mono gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  DOWNLOAD
+                </Button>
+              </div>
             </div>
 
             <div className="max-h-96 overflow-y-auto rounded-md bg-background/50 p-4 border border-border/30">
