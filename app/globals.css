@@ -126,3 +126,37 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Pixel Background Animation */
+.pixel-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pixel {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: oklch(0.708 0 0);
+  opacity: 0.3;
+  animation: float linear infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.3;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
