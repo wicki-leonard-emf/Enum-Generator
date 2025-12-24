@@ -22,7 +22,11 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Enum Generator - Username & Password Enumeration Tool",
   description: "Generate extensive username and password enumerations from your input terms. Supports multiple separators, capitalizations, and pattern variations.",
-  keywords: ["enum", "enumeration", "generator", "username", "password", "security", "penetration testing"],
+  openGraph: {
+    title: "Enum Generator",
+    description: "Generate extensive username and password enumerations from your input terms",
+    type: "website",
+  },
 }
 
 

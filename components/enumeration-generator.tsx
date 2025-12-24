@@ -236,6 +236,7 @@ export function EnumerationGenerator() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [mode, setMode] = useState<GenerationMode>("hard")
   const [copySuccess, setCopySuccess] = useState(false)
+  const [validationMessage, setValidationMessage] = useState<string>("")
 
   /**
    * Adds a new term to the list if it's not empty and not already present
@@ -243,16 +244,24 @@ export function EnumerationGenerator() {
   const addTerm = () => {
     const trimmedInput = currentInput.trim()
     
+    // Clear previous validation message
+    setValidationMessage("")
+    
     // Validate input
-    if (!trimmedInput) return
+    if (!trimmedInput) {
+      setValidationMessage("Please enter a term")
+      return
+    }
     
     // Check for duplicates (case-insensitive)
     if (terms.some(term => term.toLowerCase() === trimmedInput.toLowerCase())) {
+      setValidationMessage("This term has already been added")
       return
     }
     
     // Limit number of terms to prevent performance issues
     if (terms.length >= 10) {
+      setValidationMessage("Maximum of 10 terms allowed")
       return
     }
     
@@ -318,6 +327,7 @@ export function EnumerationGenerator() {
     setTerms([])
     setGenerated([])
     setCurrentInput("")
+    setValidationMessage("")
   }
 
   /**
@@ -332,6 +342,9 @@ export function EnumerationGenerator() {
       setTimeout(() => setCopySuccess(false), 2000)
     } catch (error) {
       console.error("Error copying to clipboard:", error)
+      // Provide user feedback for clipboard failure
+      const fallbackMessage = "Copy failed. Please try selecting and copying the text manually."
+      alert(fallbackMessage)
     }
   }
 
@@ -339,26 +352,34 @@ export function EnumerationGenerator() {
     <div id="generator" className="w-full max-w-4xl mx-auto space-y-6">
       <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
         <div className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              value={currentInput}
-              onChange={(e) => setCurrentInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addTerm()}
-              placeholder="Enter term (e.g., john, admin, 2023)"
-              className="flex-1 bg-input border-border/50 text-foreground placeholder:text-muted-foreground"
-              disabled={terms.length >= 10}
-              maxLength={50}
-            />
-            <Button
-              onClick={addTerm}
-              variant="secondary"
-              size="icon"
-              className="bg-secondary hover:bg-accent text-secondary-foreground"
-              disabled={!currentInput.trim() || terms.length >= 10}
-              title={terms.length >= 10 ? "Maximum terms reached" : "Add term"}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Input
+                value={currentInput}
+                onChange={(e) => {
+                  setCurrentInput(e.target.value)
+                  setValidationMessage("") // Clear validation on change
+                }}
+                onKeyDown={(e) => e.key === "Enter" && addTerm()}
+                placeholder="Enter term (e.g., john, admin, 2023)"
+                className="flex-1 bg-input border-border/50 text-foreground placeholder:text-muted-foreground"
+                disabled={terms.length >= 10}
+                maxLength={50}
+              />
+              <Button
+                onClick={addTerm}
+                variant="secondary"
+                size="icon"
+                className="bg-secondary hover:bg-accent text-secondary-foreground"
+                disabled={!currentInput.trim() || terms.length >= 10}
+                title={terms.length >= 10 ? "Maximum terms reached" : "Add term"}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {validationMessage && (
+              <p className="text-xs text-destructive font-mono">{validationMessage}</p>
+            )}
           </div>
 
           {terms.length > 0 && (
